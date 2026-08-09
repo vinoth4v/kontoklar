@@ -37,7 +37,7 @@ function* streams(bytes: Uint8Array): Generator<string> {
   let match: RegExpExecArray | null
 
   while ((match = opener.exec(latin1)) !== null) {
-    const start = match.index + match[0].length
+    const start = match.index + (match[0] ?? "").length
     const end = latin1.indexOf("endstream", start)
     if (end < 0) break
     opener.lastIndex = end
