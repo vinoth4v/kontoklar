@@ -1,0 +1,134 @@
+name: Claude Code
+
+# @claude on an issue or PR comment triggers Claude Code headless in this
+# runner. It opens or updates a pull request; it never merges one — that stays
+# a human action, always. See AGENTS.md's Phase 3 guardrails.
+#
+# Model calls go to Anthropic as the operator, using their Claude subscription
+# (ANTHROPIC_BASE_URL is deliberately absent — setting it is what sent every
+# token to Kompass instead). Kompass remains wired into claude-escalate.yml as
+# the manual escape hatch when the subscription is exhausted.
+#
+# Historical note, since the old comment said the opposite: everything here
+# routed through Kompass until the operator asked for their subscription. App
+# *code* still may never call a provider SDK; that rule is about the running
+# app, and this is CI acting as the operator.
+# (was: all model calls route through Kompass — ANTHROPIC_BASE_URL/ANTHROPIC_AUTH_TOKEN
+# below), never Anthropic's API directly — same rule as everywhere else in this
+# repo. anthropic_api_key is passed only because the action refuses to start
+# without something in that input; the real credential is ANTHROPIC_AUTH_TOKEN.
+on:
+  issue_comment:
+    types: [created]
+  pull_request_review_comment:
+    types: [created]
+  # A freshly opened issue whose body carries @claude counts too — this is
+  # how the marketplace's "first task" reaches a brand-new app: the scaffold
+  # workflow files the issue, nobody is around to comment on it, and without
+  # this trigger Claude never started (found live: the issue sat untouched).
+  issues:
+    types: [opened]
+
+jobs:
+  claude:
+    if: contains(github.event.comment.body, '@claude') || contains(github.event.issue.body, '@claude')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
+      id-token: write
+      actions: read
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 1
+      # Fails here, with the fix, rather than letting the action fail on an
+      # empty credential — which reads as a model error and sends you hunting
+      # in the wrong place.
+      - name: Require the subscription token
+        env:
+          CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+        run: |
+          if [ -z "$CLAUDE_CODE_OAUTH_TOKEN" ]; then
+            echo "::error::CLAUDE_CODE_OAUTH_TOKEN is not set on this repository. Run 'claude setup-token' locally, then: gh secret set CLAUDE_CODE_OAUTH_TOKEN --repo ${{ github.repository }}"
+            exit 1
+          fi
+      # The marketplace picks a model per request, but it cannot pass it here:
+      # this workflow is triggered by the issue, and sees the issue body rather
+      # than whatever inputs produced it. So the choice travels inside the body
+      # as an HTML comment — invisible when rendered, and the one channel that
+      # survives the hop.
+      #
+      # Absent means the subscription's own default, which is the right
+      # behaviour for anything filed by hand.
+      - name: Read the requested model
+        id: model
+        env:
+          ISSUE_BODY: ${{ github.event.issue.body }}
+        run: |
+          set -euo pipefail
+          CHOICE=$(printf '%s' "$ISSUE_BODY" | grep -oE 'werft:model=[a-z0-9.-]+' | head -1 | cut -d= -f2 || true)
+          # Allowlisted rather than passed through: this value becomes a command
+          # argument, and an issue body is text anyone with write access can edit.
+          case "$CHOICE" in
+            opus|sonnet|haiku) echo "arg=--model $CHOICE" >> "$GITHUB_OUTPUT"; echo "using $CHOICE" ;;
+            "") echo "arg=" >> "$GITHUB_OUTPUT"; echo "no model requested — using the subscription default" ;;
+            *) echo "arg=" >> "$GITHUB_OUTPUT"; echo "::warning::ignoring unrecognised model '$CHOICE'" ;;
+          esac
+      - uses: anthropics/claude-code-action@v1
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          # Without this, the action's default tag-mode toolset applies: read,
+          # comment, and git — but no Write and no Edit. Claude would read the
+          # request, post "building…", and have literally no way to create a
+          # file, then exit successfully having changed nothing. That happened
+          # twice on a real build plan before anyone noticed, because a run that
+          # writes no code still reports success.
+          #
+          # Bash is scoped to the three commands it needs: pnpm to install,
+          # build, typecheck and test its own work; git to commit and push a
+          # branch; gh to open the pull request. `main` is protected on every
+          # scaffolded app, so a push there is refused by GitHub rather than
+          # trusted not to happen.
+          #
+          # The mcp tools are listed explicitly because naming --allowedTools
+          # replaces the action's defaults, and dropping them silently costs the
+          # progress comment and the ability to read its own failing CI.
+          claude_args: >-
+            ${{ steps.model.outputs.arg }}
+            --allowedTools 'Edit,MultiEdit,Write,Read,Glob,Grep,LS,Bash(git:*),Bash(pnpm:*),Bash(gh:*),mcp__github_comment__update_claude_comment,mcp__github_ci__get_ci_status,mcp__github_ci__get_workflow_run_details,mcp__github_ci__download_job_log'
+
+      # A failed run currently looks the same whether the subscription is
+      # exhausted or the request was impossible: a red tick and an email saying
+      # "workflow failed". This says which, on the issue where the work was
+      # asked for, so the next move is obvious rather than a log-reading
+      # exercise.
+      #
+      # Reads its own job log, which is why the job has actions: read.
+      - name: Say why it failed
+        if: failure()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          LOG=$(gh run view "$GITHUB_RUN_ID" --repo "$GITHUB_REPOSITORY" --log 2>/dev/null || echo "")
+
+          if echo "$LOG" | grep -qiE "usage limit|rate.?limit|429|quota exceeded|insufficient (credit|quota)"; then
+            CAUSE="the Claude subscription's usage limit"
+            NEXT="It will be retried automatically every 15 minutes for up to 5 attempts (see claude-retry.yml). If the window is longer than that, run claude-escalate.yml, which routes through the Kompass gateway instead."
+          elif echo "$LOG" | grep -qiE "401|unauthor|invalid.?(token|api.?key)|CLAUDE_CODE_OAUTH_TOKEN is not set"; then
+            CAUSE="authentication — the token is missing, expired or rejected"
+            NEXT="Run \`claude setup-token\` and update the CLAUDE_CODE_OAUTH_TOKEN secret on this repository. Retrying will not help until then."
+          else
+            CAUSE="something other than a usage limit or authentication"
+            NEXT="The run log has the detail. It will still be retried up to 5 times, which will not help if the request itself is impossible."
+          fi
+
+          gh issue comment "${{ github.event.issue.number }}" --repo "$GITHUB_REPOSITORY" --body \
+          "**This run failed: $CAUSE.**
+
+          $NEXT
+
+          Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" \
+            || echo "could not comment — the trigger may not have been an issue"

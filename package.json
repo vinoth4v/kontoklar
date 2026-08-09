@@ -1,0 +1,28 @@
+{
+  "name": "kontoklar",
+  "version": "0.1.0",
+  "private": true,
+  "packageManager": "pnpm@11.9.0",
+  "engines": {
+    "node": ">=22.13.0"
+  },
+  "scripts": {
+    "build": "pnpm -r run build",
+    "dev": "pnpm --filter web run dev",
+    "test": "pnpm -r run test",
+    "test:e2e": "pnpm --filter web run test:e2e",
+    "typecheck": "pnpm -r run typecheck",
+    "lint": "biome check .",
+    "format": "biome check --write .",
+    "db:generate": "pnpm --filter web run db:generate",
+    "db:migrate": "pnpm --filter web run db:migrate",
+    "hash-password": "node --experimental-strip-types apps/web/scripts/hash-password.ts",
+    "create-app": "node --experimental-strip-types packages/create-werft-app/src/cli.ts",
+    "werft-password": "node --experimental-strip-types packages/create-werft-app/src/password-cli.ts",
+    "retire-app": "node --experimental-strip-types packages/create-werft-app/src/retire-cli.ts"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "2.5.7",
+    "typescript": "6.0.3"
+  }
+}

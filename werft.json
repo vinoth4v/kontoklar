@@ -1,0 +1,22 @@
+{
+  "name": "kontoklar",
+  "title": "Kontoklar",
+  "description": "Kontoklar is an AI-assisted personal finance app for people whose money is spread across accounts, cards, and apps they never see in one place",
+  "stack": [
+    "next",
+    "typescript",
+    "neon",
+    "drizzle",
+    "next-auth",
+    "vercel"
+  ],
+  "url": "",
+  "tags": [
+    "personal finance",
+    "budgeting",
+    "planning",
+    "cost"
+  ],
+  "status": "active",
+  "private": false
+}
