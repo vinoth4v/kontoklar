@@ -1,7 +1,24 @@
 import { db } from "@/db/client"
 import { auditLog } from "@/db/schema"
 
-export type AuditKind = "sign_in" | "sign_in_failed"
+/**
+ * The template's two, plus what Kontoklar does that is worth recovering after
+ * the fact. `data_deleted` and `data_exported` are the ones that matter most:
+ * they are irreversible from the app's point of view, and the audit row is the
+ * only evidence they happened.
+ */
+export type AuditKind =
+  | "sign_in"
+  | "sign_in_failed"
+  | "txn_added"
+  | "txn_recategorised"
+  | "statement_imported"
+  | "budget_changed"
+  | "account_changed"
+  | "settings_changed"
+  | "ai_asked"
+  | "data_exported"
+  | "data_deleted"
 
 /**
  * Write an audit row, swallowing failures.

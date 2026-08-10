@@ -1,4 +1,7 @@
-/* Every value here comes from @werft/tokens. Add a token rather than a literal. */
+/* Every value here comes from @werft/tokens. Add a token rather than a literal.
+   Layout widths are the one exception, as they were in the template: a
+   container width is a decision about this page, not a value another component
+   should be able to reach for. */
 
 *,
 *::before,
@@ -21,10 +24,31 @@ main {
   padding: var(--space-12) var(--space-6);
 }
 
+main.app {
+  max-width: 72rem;
+  padding-top: var(--space-6);
+}
+
 h1 {
   margin: 0 0 var(--space-6);
   font-size: var(--font-size-2xl);
   font-weight: var(--font-weight-semibold);
+}
+
+h2 {
+  margin: 0 0 var(--space-3);
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-semibold);
+}
+
+h3 {
+  margin: 0 0 var(--space-2);
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+}
+
+a {
+  color: var(--color-accent);
 }
 
 label {
@@ -35,7 +59,9 @@ label {
   color: var(--color-muted);
 }
 
-input {
+input,
+select,
+textarea {
   width: 100%;
   padding: var(--space-2) var(--space-3);
   font: inherit;
@@ -45,13 +71,22 @@ input {
   border-radius: var(--radius-md);
 }
 
+textarea {
+  min-height: 5rem;
+  resize: vertical;
+}
+
 input:focus-visible,
-button:focus-visible {
+select:focus-visible,
+textarea:focus-visible,
+button:focus-visible,
+a:focus-visible {
   outline: 2px solid var(--color-accent);
   outline-offset: 2px;
 }
 
-input:hover {
+input:hover,
+select:hover {
   border-color: var(--color-muted);
 }
 
@@ -79,6 +114,17 @@ button:active {
   transform: translateY(1px);
 }
 
+button.quiet {
+  color: var(--color-fg);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+}
+
+button.danger {
+  color: var(--color-bg);
+  background: var(--color-danger);
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -94,4 +140,355 @@ button:active {
   background: var(--color-surface);
   border: 1px solid var(--color-danger);
   border-radius: var(--radius-md);
+}
+
+/* ---- app chrome ---- */
+
+.topbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+  align-items: baseline;
+  justify-content: space-between;
+  padding: var(--space-3) var(--space-6);
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-surface);
+}
+
+.brand {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-fg);
+  text-decoration: none;
+}
+
+.nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  align-items: center;
+}
+
+.nav a {
+  padding: var(--space-1) var(--space-2);
+  font-size: var(--font-size-sm);
+  color: var(--color-muted);
+  text-decoration: none;
+  border-radius: var(--radius-sm);
+}
+
+.nav a:hover {
+  color: var(--color-fg);
+}
+
+.nav a[aria-current="page"] {
+  color: var(--color-fg);
+  font-weight: var(--font-weight-medium);
+  background: var(--color-bg);
+}
+
+.nav form {
+  display: inline;
+}
+
+.nav button {
+  padding: var(--space-1) var(--space-3);
+  font-size: var(--font-size-sm);
+}
+
+/* ---- layout helpers ---- */
+
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+}
+
+.stack-tight {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.cluster {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  align-items: flex-end;
+}
+
+.split {
+  display: grid;
+  gap: var(--space-6);
+  grid-template-columns: repeat(auto-fit, minmax(20rem, 1fr));
+}
+
+.card {
+  padding: var(--space-4) var(--space-6) var(--space-6);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+}
+
+.tiles {
+  display: grid;
+  gap: var(--space-4);
+  grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
+}
+
+.tile {
+  padding: var(--space-4);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+}
+
+.tile-label {
+  font-size: var(--font-size-sm);
+  color: var(--color-muted);
+}
+
+.tile-value {
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-semibold);
+  font-variant-numeric: tabular-nums;
+}
+
+.tile-note {
+  font-size: var(--font-size-sm);
+  color: var(--color-muted);
+}
+
+/* ---- text ---- */
+
+.muted {
+  color: var(--color-muted);
+}
+
+.small {
+  font-size: var(--font-size-sm);
+}
+
+.pos {
+  color: var(--color-success);
+}
+
+.neg {
+  color: var(--color-danger);
+}
+
+.num {
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.pill {
+  display: inline-block;
+  padding: 0 var(--space-2);
+  font-size: var(--font-size-sm);
+  color: var(--color-muted);
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-full);
+}
+
+.pill.warn {
+  color: var(--color-danger);
+  border-color: var(--color-danger);
+}
+
+.pill.good {
+  color: var(--color-success);
+  border-color: var(--color-success);
+}
+
+.notice {
+  padding: var(--space-3) var(--space-4);
+  font-size: var(--font-size-sm);
+  color: var(--color-muted);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-left: var(--space-1) solid var(--color-accent);
+  border-radius: var(--radius-md);
+}
+
+.empty {
+  padding: var(--space-8) var(--space-6);
+  text-align: center;
+  color: var(--color-muted);
+  border: 1px dashed var(--color-border);
+  border-radius: var(--radius-lg);
+}
+
+/* ---- tables ---- */
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--font-size-sm);
+}
+
+th {
+  padding: var(--space-2) var(--space-2);
+  text-align: left;
+  font-weight: var(--font-weight-medium);
+  color: var(--color-muted);
+  border-bottom: 1px solid var(--color-border);
+  white-space: nowrap;
+}
+
+td {
+  padding: var(--space-2) var(--space-2);
+  border-bottom: 1px solid var(--color-border);
+  vertical-align: top;
+}
+
+td form {
+  display: flex;
+  gap: var(--space-2);
+  align-items: center;
+}
+
+td select {
+  width: auto;
+  min-width: 9rem;
+  padding: var(--space-1) var(--space-2);
+  font-size: var(--font-size-sm);
+}
+
+td button {
+  padding: var(--space-1) var(--space-2);
+  font-size: var(--font-size-sm);
+}
+
+.scroll {
+  overflow-x: auto;
+}
+
+/* ---- bars ---- */
+
+.bar {
+  position: relative;
+  height: var(--space-2);
+  margin-top: var(--space-1);
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-full);
+  overflow: hidden;
+}
+
+.bar-fill {
+  display: block;
+  height: 100%;
+  background: var(--color-accent);
+}
+
+.bar-fill.over {
+  background: var(--color-danger);
+}
+
+.bar-fill.good {
+  background: var(--color-success);
+}
+
+/* ---- forms ---- */
+
+.fields {
+  display: grid;
+  gap: var(--space-4);
+  grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.field label {
+  margin: 0;
+}
+
+.hint {
+  font-size: var(--font-size-sm);
+  color: var(--color-muted);
+}
+
+fieldset {
+  margin: 0;
+  padding: var(--space-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+}
+
+legend {
+  padding: 0 var(--space-2);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-muted);
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  align-items: center;
+  margin-top: var(--space-4);
+}
+
+/* ---- charts ---- */
+
+.chart {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+
+.chart .line {
+  fill: none;
+  stroke: var(--color-accent);
+  stroke-width: 2;
+  vector-effect: non-scaling-stroke;
+}
+
+.chart .area {
+  fill: var(--color-accent);
+  opacity: 0.12;
+}
+
+.chart .axis {
+  stroke: var(--color-border);
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+}
+
+.chart .node {
+  fill: var(--color-surface);
+  stroke: var(--color-border);
+}
+
+.chart .edge {
+  fill: none;
+  stroke: var(--color-accent);
+  opacity: 0.55;
+}
+
+.chart text {
+  fill: var(--color-fg);
+  font-size: var(--font-size-sm);
+  font-family: var(--font-family-sans);
+}
+
+.chart text.label {
+  fill: var(--color-muted);
+}
+
+.prose p {
+  margin: 0 0 var(--space-3);
+}
+
+.prose li {
+  margin-bottom: var(--space-2);
 }
