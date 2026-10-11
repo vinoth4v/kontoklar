@@ -120,3 +120,11 @@ ledger nobody agreed to is worse than one extra click.
 - Alerts are pull-only: an overrun shows when the dashboard is opened. Epic 4's
   proactive alert is half-built — the projection exists, the delivery does not.
 - Multi-currency net worth is a straight sum. No conversion, no rates provider.
+
+## 2026-10-11 — Off Vercel and Neon: Coolify on the home server
+
+Production deploys from the Dockerfile on every push to `main`; PRs get a Coolify
+preview at `pr<N>-kontoklar.vinothkannan.de` on a nightly copy of the production
+database. The container migrates its own database before starting
+(`deploy/start.mjs`); `proxy.ts` lets `/werft-commit.txt` through so CI can tell
+the preview serves the PR's commit before Playwright runs.
